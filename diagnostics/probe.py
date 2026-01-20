@@ -29,8 +29,10 @@ class Probe(Diagnostic):
 
         utils_path = os.path.join(os.path.dirname(__file__), '../utils')
         self.position_path = os.path.join(utils_path, 'probe_positions.json') 
-        self.mapping_path = os.path.join(utils_path, 'probe_mappings.json') if self.number > 9831 else os.path.join(utils_path, 'probe_mappings__deprecated.json')
-
+        #old mapping, new mapping next line
+        #self.mapping_path = os.path.join(utils_path, 'probe_mappings.json') if self.number > 9831 else os.path.join(utils_path, 'probe_mappings__deprecated.json')
+        self.mapping_path = os.path.join(utils_path, 'probe_mappings_all_channel.json')
+        
         self._active = None
         self._position = None
         self._channel = None
