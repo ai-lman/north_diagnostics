@@ -14,7 +14,7 @@ import numpy as np
 
 # Define all useful functions
 def current_fit(U, I_isat, k_BT_e, U_f):
-  """Function fitted by scipy"""
+  """Function fitted by scipy in the transition function of the I-V curve for electron temperature measurements"""
   e0 = 1.60E-19 # in C
   return I_isat*(np.exp(e0*(U-U_f)/k_BT_e)-1)
   
@@ -27,7 +27,6 @@ def read_machine_data(shot, path_to_data):
                       7 (HFS power)
   to control machine parameters. Plotted in the main program and saved in a .txt files in the Data folder.
   """
-  
   #Read data file
   file = nptdms.TdmsFile.read(f"{path_to_data}/CRIO{shot}.tdms")
 
@@ -51,7 +50,7 @@ def read_machine_data(shot, path_to_data):
 def read_probe_data(shot, path_to_data, m_i, A, T_sweep, k_B, e):
   """
   Read all the probes channels which are n_channel=n_probe+14. 
-  Plotted in the main program and saved in a .txt files in the Data folder.
+  Saved in a .txt files in the Data folder.
   """
   #Useful variables
   probe = {}
@@ -70,13 +69,13 @@ def read_probe_data(shot, path_to_data, m_i, A, T_sweep, k_B, e):
       data[:,i+1] = I/(0.61*e*np.sqrt(k_B*T_e_estim/m_i)*A)
     elif bias_type == 'temperature':
       if i==0:
-        N = int(len(t)/T_sweep) 
+        N = int(len(t)/T_sweep) #Number of temperature measurements possible, take a full sweep to be unbothered by hysterisis effects
         data = np.zeros(N, 51))
         data[:,0] = range(N)*T_sweep + Tsweep/2
       for j in range(N):
         start, end = get_time_indices(j*T_sweep, (j+1)*T_sweep)
         guess = [0.1, 1E-19, 10]
-        popt, pcov = curve_fit(current_fit, U, I, guess)
+        popt, pcov = curve_fit(current_fit, U[start, end], I[start, end], guess)
         data[j,i+1] = popt[1]/k_B
     else:
       print('WARNING: the bias type is not recognized')
@@ -87,15 +86,16 @@ def read_probe_data(shot, path_to_data, m_i, A, T_sweep, k_B, e):
 if __name__=="__main__":
   #Input parameters
   shot = 9974
-  Z_gas = 4 #Helium
-  T_sweep = 13.33E-3 # period of the sweep for electronic temperature measurements in s
-  bias_type = 'temperature' # Probes can be biased to measure 'density' or 'temperature' (the same bias is applied on every probe)
+  A_gas = 4 #Helium 4
+  T_sweep = 13.33E-3 #period of the sweep for electronic temperature measurements in s
+  bias_type = 'temperature' #Probes can be biased to measure 'density' or 'temperature' (the same bias is applied on every probe)
   path_to_data = './north_diagnostics/Data/'
+  path_to_figure = './north_diagnostics/Figures/'
 
   #Physical constants
   e = 1.602E-19 # in C
   k_B = 1.38E-23 # in J/K
-  m_i = Z_gas*1.67E-27 # ion mass in kg
+  m_i = A_gas*1.67E-27 # ion mass in kg
 
   #Experiment parameters
   A = 1E-6 # probe surface in m^2
@@ -107,12 +107,11 @@ if __name__=="__main__":
   
   #Saving all data in the Data folder
   head = 'Time; Light sensor; Coil current; Pressure sensor; LFS power; HFS power in SI units'
-  np.savetxt(f"{path_to_data}/machine_data{shot}.txt", machine_data, delimiter=';', header=head)
+  np.savetxt(f"{path_to_data}machine_data{shot}.txt", machine_data, delimiter=';', header=head)
   head = 'Time; probes in the numerical order in SI units'
-  np.savetxt(f"{path_to_data}/probe_data{shot}.txt", probe_data, delimiter=';', header=head)
+  np.savetxt(f"{path_to_data}probe_data{shot}.txt", probe_data, delimiter=';', header=head)
   
   #Plot and save figures
-  path_to_figure = './north_diagnostics/Figures/'
   plt.subplot(2,2,1)
   plt.plot(machine_data[:,0]*1E3, machine_data[:,1])
   plt.xlabel('time (ms)')
@@ -137,4 +136,3 @@ if __name__=="__main__":
   plt.legend()
   plt.show()
   plt.savefig(f"{path_to_figure}machine_data{shot})
-
