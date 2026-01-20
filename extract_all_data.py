@@ -13,9 +13,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Define all usefull functions
-def current_fit(U, I_isat, k_BT_e, U_f):
+def current_fit(U, I_isat, k_BT_e, U_f, e):
   """Function fitted by scipy"""
-  e = 1.602E-19 # in C
   return I_isat*(1-np.exp(e*(U-U_f)/k_BT_e))
   
 def read_machine_data(shot, path_to_data):
@@ -63,21 +62,33 @@ def read_probe_data(shot, path_to_data):
     t = probe[i].time
     U = probe[i].bias_voltage
     I = probe[i].current
+    if i==0:
+      data = np.zeros((len(t), 51))
+      data[:,0] = t
     if bias_type == 'density':
-      pass
+      data[:,i+1] = I/(0.61*e*np.sqrt(k_B*T_e_estim/m_i)*A)
     elif bias_type == 'temperature': 
-      pass
+      data[:,i+1] = T_e_estim
     else:
       print('WARNING: the bias type is not recognized')
-    
   return data
 
 #Main program: plot all machine and some probe data to verify that the shot "looks fine"
 if __name__=="__main__":
   #Input parameters
   shot = 9974
+  Z_gas = 4 #Helium
   bias_type = 'temperature' # Probes can be biased to measure 'density' or 'temperature' (the same bias is applied on every probe)
   path_to_data = './north_diagnostics/Data/'
+
+  #Physical constants
+  e = 1.602E-19 # in C
+  k_B = 1.38E-23 # in J/K
+  m_i = Z_gas*1.67E-27 # in kg
+
+  #Experiment parameters
+  A = 1E-6 # in m^2
+  T_e_estim = 1.5*e/k_B # in K (the numerical value is in eV)
 
   #Generate the data
   machine_data = read_machine_data(shot, path_to_data)
@@ -91,3 +102,4 @@ if __name__=="__main__":
   
   #Plot and save figures
   path_to_figure = './north_diagnostics/Figure/'
+
