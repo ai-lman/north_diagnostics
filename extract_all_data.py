@@ -1,5 +1,5 @@
 """
-Extract all data from the ddaq files and plot it. Both .tdms file must be saved in the data folder, but there is a possibility to change the path file 
+Extract all data from the DDAQ and CRIO files and plot it. Both .tdms file must be saved in the data folder, but there is a possibility to change the path file 
 at the beginning of the main program.
 Usefull for further data treatment and save all usefull data in a .txt file.
 Define shot number just after the main programm begins.
@@ -13,27 +13,81 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Define all usefull functions
-def read_machine_data():
+def current_fit(U, I_isat, k_BT_e, U_f):
+  """Function fitted by scipy"""
+  e = 1.602E-19 # in C
+  return I_isat*(1-np.exp(e*(U-U_f)/k_BT_e))
+  
+def read_machine_data(shot, path_to_data):
   """
   Read the channels:  1 (Light sensor)
                       2 (Coil currents)
                       3 (Pressure sensor)
                       6 (LFS power)
                       7 (HFS power)
-  to control machine parameters. Plotted in the main program and saved in a .txt files.
+  to control machine parameters. Plotted in the main program and saved in a .txt files in the Data folder.
   """
+  
+  #Read data file
+  file = nptdms.TdmsFile.read(f"{path_to_data}/CRIO{shot}.tdms")
 
-def read_probe_data():
+  #Define the time interval of the study (the mask variable)
+  t_start = 0
+  t_end = machine_file['Data']['Time'][-1]
+  mask = (machine_file['Data']['Time'][:] >= t_start) & (machine_file['Data']['Time'][:] <= t_end)
+
+  #Extracting all machine parameters
+  data[:,0] = t
+  data = np.zeros((len(t), 6))
+  head = 'Time; Light sensor; Coil current; Pressure sensor; LFS power; HFS power'
+  data[:,0] = t*1E-3 # in s
+  data[:,1] = machine_file['Data']['Light'][mask] # in ??; whatever, not for a quantitative analysis
+  data[:,2] = machine_file['Data']['I_TF'][mask] # in A
+  data[:,3] = machine_file['Data']['Pressure'][mask]*1E2 # in Pa
+  data[:,4] = machine_file['Data']['LFSset'][mask]*450/3000 # in W
+  data[:,5] = machine_file['Data']['HFSset'][mask]*450/3000 # in W
+  return data
+
+def read_probe_data(shot, path_to_data):
   """
   Read all the probes channels which are n_channel=n_probe+14. 
-  Plotted in the main program and saved in a .txt files.
+  Plotted in the main program and saved in a .txt files in the Data folder.
   """
-  return
+  #Useful variables
+  probe = {}
+  data = np.zeros((len(t), 51))
 
-#Main programme: plot all machine and some probe data to verify that the shot looks fine
+  #Read data file
+  for i in range(Probe.TOTAL_PROBES):
+    probe[i] = Probe(path = path_to_data, shot = shot, number = i+1, caching = True)
+    t = probe[i].time
+    U = probe[i].bias_voltage
+    I = probe[i].current
+    if bias_type == 'density':
+      pass
+    elif bias_type == 'temperature': 
+      pass
+    else:
+      print('WARNING: the bias type is not recognized')
+    
+  return data
+
+#Main program: plot all machine and some probe data to verify that the shot "looks fine"
 if __name__=="__main__":
-  shot=9974
-  path_to_file=
-  file=
-  
+  #Input parameters
+  shot = 9974
+  bias_type = 'temperature' # Probes can be biased to measure 'density' or 'temperature' (the same bias is applied on every probe)
+  path_to_data = './north_diagnostics/Data/'
 
+  #Generate the data
+  machine_data = read_machine_data(shot, path_to_data)
+  probe_data = read_probe_data(shot, path_to_data)
+  
+  #Saving all data in the Data folder
+  head = 'Time; Light sensor; Coil current; Pressure sensor; LFS power; HFS power'
+  np.savetxt(f"{path_to_data}/machine_data{shot}.txt", machine_data, delimiter='; ', header=head)
+  head = 'Time; probes in the numerical order'
+  np.savetxt(f"{path_to_data}/probe_data{shot}.txt", probe_data, delimiter='; ', header=head)
+  
+  #Plot and save figures
+  path_to_figure = './north_diagnostics/Figure/'
