@@ -5,11 +5,11 @@ Usefull for further data treatment and save all usefull data in a .txt file.
 Define shot number just after the main programm begins.
 """
 
-#Import all useful libraries
-
+#Get the other programs and modules
 !git clone https://github.com/thrysoe/north_diagnostics.git -q
 !pip install nptdms -q
 
+#Import all useful libraries
 import nptdms
 from scipy.optimize import curve_fit
 from north_diagnostics.diagnostics import Probe, Diagnostic
@@ -64,10 +64,9 @@ def read_probe_data(shot, path_to_data, m_i, A, T_sweep, k_B, e):
   #Read data file
   for i in range(Probe.TOTAL_PROBES):
     probe[i] = Probe(path = path_to_data, shot = shot, number = i+1, caching = True)
-    #idx_start, idx_end = probe[i].get_time_indices(t_start*1e-3, t_end*1e-3)
-    t = probe[i].time #[idx_start:idx_end]
-    U = probe[i].bias_voltage #[idx_start:idx_end]
-    I = probe[i].current #[idx_start:idx_end]
+    t = probe[i].time
+    U = probe[i].bias_voltage
+    I = probe[i].current
     if bias_type == 'density':
       if i==0:
         data = np.zeros((len(t), 51))
@@ -142,4 +141,5 @@ if __name__=="__main__":
   plt.legend()
   plt.show()
   plt.savefig(f"{path_to_figure}/machine_data{shot}")
+
 
